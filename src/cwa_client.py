@@ -1,8 +1,26 @@
+import ssl
+import certifi
 import requests
+from requests.adapters import HTTPAdapter
 from . import config
+
+
+class _CWAAdapter(HTTPAdapter):
+    """使用 certifi 憑證庫，並放寬 Python 3.13+ 的嚴格憑證檢查（仍會驗證憑證）。"""
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
+        kwargs["ssl_context"] = ctx
+        return super().init_poolmanager(*args, **kwargs)
+
+
+_session = requests.Session()
+_session.mount("https://", _CWAAdapter())
+
 
 class CWAError(Exception):
     pass
+
 
 def _val(elements, name, i):
     el = elements.get(name)
@@ -10,12 +28,13 @@ def _val(elements, name, i):
         raise CWAError(f"缺少欄位 {name}")
     return el[i]
 
+
 def fetch_forecasts():
     """回傳 list[dict]：每個縣市 × 每個 12 小時時段一列。"""
     if not config.API_KEY:
         raise CWAError("未設定 CWA_API_KEY")
     try:
-        r = requests.get(config.URL, params={"Authorization": config.API_KEY,
+        r = _session.get(config.URL, params={"Authorization": config.API_KEY,
                          "format": "JSON"}, timeout=config.TIMEOUT)
         r.raise_for_status()
         data = r.json()
@@ -37,7 +56,7 @@ def fetch_forecasts():
                     ci=_val(els, "CI", i)["parameter"]["parameterName"],
                 ))
         except (KeyError, ValueError, TypeError, CWAError):
-            continue  # 略過不完整的單一縣市，不讓整頁崩潰
+            continue
     if not rows:
         raise CWAError("回應中沒有可用的預報資料")
     return rows

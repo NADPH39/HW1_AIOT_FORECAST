@@ -58,7 +58,7 @@ st.subheader(f"{loc}")
 st.caption(f"最近擷取時間：{fetched:%Y-%m-%d %H:%M}（台灣時間）")
 for col, r in zip(st.columns(len(rows)), rows):
     with col, st.container(border=True):
-        st.markdown(f"**{r['start'][5:16]} → {r['end'][5:16]}**")
+        st.markdown(f"**{r['start_time'][5:16]} → {r['end_time'][5:16]}**")
         st.markdown(f"### {r['wx']}")
         st.metric("氣溫 (°C)", f"{r['min_t']} ~ {r['max_t']}")
         st.metric("降雨機率", f"{r['pop']}%")
@@ -66,9 +66,9 @@ for col, r in zip(st.columns(len(rows)), rows):
 
 t = pd.DataFrame(rows)
 f2 = go.Figure()
-f2.add_bar(x=t["start"], y=t["pop"], name="降雨機率 (%)", opacity=.3, yaxis="y2")
-f2.add_scatter(x=t["start"], y=t["max_t"], name="最高溫", mode="lines+markers")
-f2.add_scatter(x=t["start"], y=t["min_t"], name="最低溫", mode="lines+markers")
+f2.add_bar(x=t["start_time"], y=t["pop"], name="降雨機率 (%)", opacity=.3, yaxis="y2")
+f2.add_scatter(x=t["start_time"], y=t["max_t"], name="最高溫", mode="lines+markers")
+f2.add_scatter(x=t["start_time"], y=t["min_t"], name="最低溫", mode="lines+markers")
 f2.update_layout(height=320, yaxis_title="°C",
     yaxis2=dict(overlaying="y", side="right", range=[0, 100], title="%"))
 st.plotly_chart(f2, use_container_width=True)
